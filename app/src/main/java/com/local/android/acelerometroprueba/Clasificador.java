@@ -1,22 +1,33 @@
 package com.local.android.acelerometroprueba;
 
+import android.util.Log;
+
 /**
  * Created by FESEJU on 01/04/2015.
  */
 public class Clasificador {
 
     private Muestra[] valores;
-    private long peaktime;
 
+    private long peaktime;
     private long peaktimemas;
     private int marcadorPeak=0;
     private int marcadorPeakMas;
 
-    private int marcadorIE=0;
-    private long IE=0;
+    private int marcadorIE=0; //posición en el vector del tiempo de fin de impacto valor_IE
+    private long valor_IE =0;
 
-    private int marcadorIS=0;
-    private long IS=0;
+    private int marcadorIS=0; //posición en el vector del tiempo de inicio de impacto valor_IS
+    private long valor_IS =0;
+
+    private double valor_AAMV;
+    private double valor_IDI;
+    private double valor_MPI;
+    private double valor_MVI;
+    private double valor_PDI;
+    private double valor_ARI;
+    private double valor_FFI;
+    private double valor_SCI;
 
     /**
      * Calcula los 8 valores necesarios para el clasificador
@@ -31,8 +42,28 @@ public class Clasificador {
         peaktimemas=peaktime+1000000000; //nanosegundos
         marcadorPeakMas= valores.length-1;
 
+        for(int i=0;i<valores.length;i++) {
+            long eltiempo = valores[i].getTiempo();
+            if (eltiempo >= peaktime) {
+                marcadorPeak = i;
+            }
+        }
+
+
+        //cálculo valores iniciales.
         calcularIE();
         calcularIS();
+
+        //a partir de aqui son los cálculos de los ocho valores.
+        valor_AAMV=calcularAAMV();
+        valor_IDI=calcularIDI();
+        valor_MPI=calcularMPI();
+        valor_MVI=calcularMVI();
+        valor_PDI=calcularPDI();
+        valor_ARI=calcularARI();
+        valor_FFI=calcularFFI();
+        valor_SCI=calcularSCI();
+
     }
 
     /**
@@ -42,9 +73,7 @@ public class Clasificador {
     private void calcularIE(){
        for(int i=0;i<valores.length;i++){
             long eltiempo=valores[i].getTiempo();
-            if(eltiempo>=peaktime){
-                marcadorPeak=i;
-            }
+
             if(eltiempo>=peaktimemas){
                 marcadorPeakMas=i;
                 break;
@@ -53,7 +82,7 @@ public class Clasificador {
 
         for(int j=marcadorPeakMas; j==marcadorPeak; j--){
             if(valores[j].getAceleracion()>1.5) {
-                IE=valores[j].getTiempo();
+                valor_IE =valores[j].getTiempo();
                 marcadorIE=j;
                 break;
             }
@@ -62,16 +91,16 @@ public class Clasificador {
 
     /**
      * Calcula el tiempo de Inicio del impacto. Tiempo de primera aceleracion > 1.5 precedida de aceleración < 0.8 en
-     * intervalo [ IE-1200, Peaktime ]
+     * intervalo [ valor_IE-1200, Peaktime ]
      * @return
      */
     private void calcularIS() {
-        long tiempoIEmenos = IE - 1200000000;
+        long tiempoIEmenos = valor_IE - 1200000000;
         int marcadorTiempoIEMenos = 0;
         for (int i = 0; i < valores.length; i++) {
             long eltiempo = valores[i].getTiempo();
             if (eltiempo >= tiempoIEmenos) {
-                marcadorTiempoIEMenos = i;
+                marcadorTiempoIEMenos = i-1;
                 break;
             }
         }
@@ -91,26 +120,224 @@ public class Clasificador {
                 if(valores[j].getAceleracion()>1.5){
                     elmayor=true;
                     marcadorIS=j;
-                    IS=valores[j].getTiempo();
+                    valor_IS =valores[j].getTiempo();
                 }
             }
         }
         if(!elmenor || !elmayor) {
             marcadorIS=marcadorPeak;
-            IS=peaktime;
+            valor_IS =peaktime;
         }
     }
 
-
-    //calcular AAMV
-    private void calcularAAMV(){
-
+    /**
+     * Calcula el promedio absoluto de aceleración
+     * En el intervalo [valor_IS,valor_IE]
+     *
+     */
+    private double calcularAAMV(){
+        double difTotal=0;
+        if(marcadorIS>0 && marcadorIE<=valores.length) {
+            for(int i=marcadorIS;i<=marcadorIE;i++){
+                double dif=Math.abs( valores[i].getAceleracion() - valores[i+1].getAceleracion() );
+                difTotal=difTotal+dif;
+            }
+            difTotal=difTotal/(marcadorIE-marcadorIS+1);
+            Log.i("Acelerometro", "difTotal: " + difTotal);
+        }
+        Log.i("Acelerometro","Marcadores "+marcadorIS+" "+marcadorIE+" AAMV "+difTotal);
+        return difTotal;
     }
-    //calcular IDI
 
-    //calcular MPI
+    /**
+     * Calcula el indice de duración de impacto. IDI
+     * Diferencia entre el tiempo valor_IE y el tiempo valor_IS
+     */
+    private double calcularIDI(){
+        long tiempoFinal=valores[marcadorIE].getTiempo();
+        long tiempoInicio=valores[marcadorIS].getTiempo();
+        return tiempoFinal-tiempoInicio; //nanosegundos.
+    }
 
-    //...
+    /**
+     * Calcula el valor del indice de valor máximo de aceleración. MPI
+     * En el intervalo [valor_IS,valor_IE]
+     * @return el valor de MPI en g.
+     */
+    private double calcularMPI(){
+        double maxAceleracion =0;
+        if(marcadorIS>0 && marcadorIE<=valores.length) {
+            for(int i=marcadorIS;i<=marcadorIE;i++){
+                if(maxAceleracion< valores[i].getAceleracion() ) {
+                    maxAceleracion = valores[i].getAceleracion();
+                }
+            }
+        }
+        Log.i("Acelerometro","MPI: "+maxAceleracion);
+        return maxAceleracion;
+    }
+
+    /**
+     * Calcula el índice de valle mínimo. MVI.
+     * Es el valor mínimo de aceleración en el intervalo [valor_IS-500,valor_IE]
+     * Útil para distinguir choques de caidas.
+     *
+     * @return el valor mínimo de aceleración.
+     */
+    private double calcularMVI(){
+        //calcular posición valor_IS-500 000 000
+        long tiempoISmenos = valor_IS - 500000000;
+        int marcadorTiempoISMenos = 0;
+        for (int i = 0; i < valores.length; i++) {
+            long eltiempo = valores[i].getTiempo();
+            if (eltiempo >= tiempoISmenos) { //en el peor caso marcará el valor i=0;
+                marcadorTiempoISMenos = i;
+                break;
+            }
+        }
+        //calcular el MVI.
+        double minAceleracion =1; //pongo 1 g. Una caida debe bajar de 1g.
+        if(marcadorTiempoISMenos>0 && marcadorIE<=valores.length) {
+            for(int i=marcadorTiempoISMenos;i<=marcadorIE;i++){
+                if(minAceleracion> valores[i].getAceleracion() ) {
+                    minAceleracion = valores[i].getAceleracion();
+                }
+            }
+        }
+        Log.i("Acelerometro","MVI: "+minAceleracion);
+        return minAceleracion;
+    }
+
+    /**
+     * Calcula el índice de duración de pico. PDI.
+     * Diferencia entre el PS comienzo de pico y PE fin de pico.
+     * PS es el tiempo último muestreo <1.5g antes del pico
+     * PE es el tiempo del primer muestreo <1.8g despues del pico.
+     *
+     * @return el valor de PDI en segundos.
+     */
+    private double calcularPDI(){
+        int marcaPS=0;
+        int marcaPE=valores.length-1;
+        for(int i=marcadorPeak-1;i>=0;i--){
+           if( valores[i].getAceleracion() <1.5){
+               marcaPS=i;
+               break;
+           }
+        }
+        for(int i=marcadorPeak+1;i<valores.length;i++){
+            if(valores[i].getAceleracion()<1.8){
+                marcaPE=i;
+                break;
+            }
+        }
+        return  valores[marcaPE].getAceleracion()-valores[marcaPS].getAceleracion();
+    }
+
+    /**
+     * Calcula el indice de ratio de actividad. ARI.
+     * Mide el nivel de actividad en 700ms centrados en [valor_IS,valor_IE]
+     * Ratio entre número de muestras no en [0.8g,1.3g] y total muestras en el intervalo.
+     * Cuanto más alto mayor actividad.
+     *
+     * @return El valor de ARI.
+     */
+    private double calcularARI(){
+        int marcaInicio=marcadorIS;
+        int marcaFin=marcadorIE;
+        double dif= valor_IE - valor_IS;
+        //calculo intervalo centrado
+        if( dif > 700000000 ){
+            double tiempoAnte=dif/2-350000000+ valor_IS;
+            double tiempoDes=dif/2+350000000+ valor_IS;
+
+            //buscar las posiciones de esos tiempos.
+            for(int i=0;i<valores.length;i++) {
+               if( valores[i].getTiempo()>tiempoAnte){
+                   marcaInicio=i-1;
+                   if(marcaInicio<0) marcaInicio=0;
+                   break;
+               }
+            }
+            for(int i=0;i<valores.length;i++) {
+                if(valores[i].getTiempo()>tiempoDes){
+                    marcaFin=i;
+                    break;
+                }
+            }
+        }
+        //calculo indice
+        int totalmuestras=marcaFin-marcaInicio+1;
+        int muestrasEnIntervalo=0;
+
+        for(int i=marcaInicio;i<=marcaFin;i++){
+            double ace=valores[i].getAceleracion();
+            if( ace<0.8 || ace>1.5 ){
+                muestrasEnIntervalo++;
+            }
+        }
+
+        return muestrasEnIntervalo/totalmuestras;
+    }
+
+
+    /**
+     * Calcula el indice de caida libre. FFI.
+     * Busca muestra <0.8g 200ms antes del pico. El tiempo encontrado es el fin del intervalo, si no 200ms.
+     * Inicio del intervalo 200ms antes del fin.
+     *
+     * Se calcula como media de valores de aceleración
+     * saltos 0.1g caidas minimo 0.6, media 1.1g
+     *
+     * @return el valor de FFI
+     */
+    private double calcularFFI(){
+        int marcaInicio=0;
+        int marcaFin=marcadorPeak;
+
+        //averiguar fin de intervalo
+        for(int i=marcadorPeak-1;i>=0;i--){
+           double difTiempo=peaktime-valores[i].getTiempo();
+           if(valores[i].getAceleracion() < 0.8   ){
+               marcaFin=i;
+               break;
+           }else if( difTiempo>200000000  ){
+               if(i==marcadorPeak-1){
+                   marcaFin=i;
+               }else{
+                   marcaFin=i-1;
+               }
+               break;
+           }
+        }
+        //averiguar inicio intervalo.
+        double tiempoInicio=valores[marcaFin].getTiempo()-200000000;
+        for(int i=marcaFin-1;i>=0;i--){
+            double difTiempo=tiempoInicio-valores[i].getTiempo();
+            if(difTiempo>200000000){
+                marcaInicio=i;
+                break;
+            }
+        }
+        //calcular media.
+        double contador=0;
+        for(int i=marcaInicio;i<=marcaFin;i++){
+            contador=contador+valores[i].getAceleracion();
+        }
+        return contador/(marcaFin-marcaInicio+1);
+     }
+
+
+    /**
+     * Calcula el indice de contador de pasos. SCI
+     * Contar valles 2200ms antes del PT.
+     * Valle aceleración < 1g durante al menos 80 ms
+     * seguido de pico >1.6g dentro de 200 ms.
+     * Valles consecutivos separados más de 200ms.
+     *
+     * @return el valor de SCI
+     */
+    private double calcularSCI(){ return 0; }
 
 }
 

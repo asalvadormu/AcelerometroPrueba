@@ -218,7 +218,9 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
         }
         difTotal=difTotal/(datos.length-marcador);
         Log.i("Acelerometro","difTotal: "+difTotal);
+
         //dependiendo del valor difTotal se envian los datos a clasificador o se considera "no caida".
+        Clasificador clasificador=new Clasificador(pt,datos);
         estado="muestreo";
     }
 
