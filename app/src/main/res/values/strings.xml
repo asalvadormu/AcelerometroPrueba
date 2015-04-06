@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">AcelerometroPrueba</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+
+    <!-- nombres de sensor. -->
+    <string name="sensorNameLabel">Sensor:</string>
+    <string name="sensorVendorLabel">Vendedor:</string>
+    <string name="sensorVersionLabel">Version:</string>
+    <string name="sensorPowerLabel">Power:</string>
+    <string name="Ejex">Eje X: </string>
+    <string name="Ejey">Eje y: </string>
+    <string name="Ejez">Eje z: </string>
+    <string name="Tiempo">Tiempo: </string>
+    <string name="Modulo">Modulo: </string>
+</resources>

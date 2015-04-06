@@ -1,0 +1,181 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    tools:context=".MainActivity"
+        android:orientation="vertical">
+
+
+        <!-- Sensor Name -->
+
+        <TextView
+            android:id="@+id/sensorNameLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_marginBottom="5dp"
+            android:text="@string/sensorNameLabel" />
+
+        <TextView
+            android:id="@+id/sensorNameValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@id/sensorNameLabel"
+            android:layout_toRightOf="@id/sensorNameLabel" />
+        <!-- End Sensor Name -->
+
+
+        <!-- Sensor Vendor -->
+
+        <TextView
+            android:id="@+id/sensorVendorLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/sensorNameLabel"
+            android:layout_marginBottom="5dp"
+            android:text="@string/sensorVendorLabel" />
+
+        <TextView
+            android:id="@+id/sensorVendorValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@id/sensorVendorLabel"
+            android:layout_toRightOf="@id/sensorVendorLabel" />
+        <!-- End Sensor Vendor -->
+
+
+        <!-- Sensor Version -->
+
+        <TextView
+            android:id="@+id/sensorVersionLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/sensorVendorLabel"
+            android:layout_marginBottom="5dp"
+            android:text="@string/sensorVersionLabel" />
+
+        <TextView
+            android:id="@+id/sensorVersionValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@id/sensorVersionLabel"
+            android:layout_toRightOf="@id/sensorVersionLabel" />
+        <!-- End Sensor Version -->
+
+
+        <!-- Sensor Power -->
+
+        <TextView
+            android:id="@+id/sensorPowerLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/sensorVersionLabel"
+            android:layout_marginBottom="5dp"
+            android:text="@string/sensorPowerLabel" />
+
+        <TextView
+            android:id="@+id/sensorPowerValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@id/sensorPowerLabel"
+            android:layout_toRightOf="@id/sensorPowerLabel" />
+        <!-- End Sensor Power -->
+
+
+        <!-- Sensor X -->
+
+        <TextView
+            android:id="@+id/labelX"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/sensorPowerLabel"
+            android:layout_marginBottom="5dp"
+            android:text="@string/Ejex" />
+
+        <TextView
+            android:id="@+id/valueX"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@id/labelX"
+            android:layout_marginLeft="5dp"
+            android:layout_toRightOf="@id/labelX" />
+        <!-- End SensorX -->
+
+
+        <!-- Sensor Y -->
+
+        <TextView
+            android:id="@+id/labelY"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/labelX"
+            android:layout_marginBottom="5dp"
+            android:text="@string/Ejey" />
+
+        <TextView
+            android:id="@+id/valueY"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@id/labelY"
+            android:layout_marginLeft="5dp"
+            android:layout_toRightOf="@id/labelY" />
+        <!-- End Sensor Y -->
+
+
+        <!-- Sensor Z -->
+
+        <TextView
+            android:id="@+id/labelZ"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/labelY"
+            android:layout_marginBottom="5dp"
+            android:text="@string/Ejez" />
+
+        <TextView
+            android:id="@+id/valueZ"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@id/labelZ"
+            android:layout_marginLeft="5dp"
+            android:layout_toRightOf="@id/labelZ" />
+        <!-- End Sensor Z -->
+
+        <TextView
+            android:id="@+id/tiempo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/labelZ"
+            android:layout_marginBottom="5dp"
+            android:text="@string/Tiempo"
+            />
+         <TextView
+            android:id="@+id/tiempovalor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@id/tiempo"
+        android:layout_marginLeft="5dp"
+        android:layout_toRightOf="@id/tiempo" />
+
+    <TextView
+        android:id="@+id/modulo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tiempo"
+        android:layout_marginBottom="5dp"
+        android:text="@string/Modulo"
+        />
+    <TextView
+        android:id="@+id/modulovalor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@id/modulo"
+        android:layout_marginLeft="5dp"
+        android:layout_toRightOf="@id/modulo" />
+
+
+    </RelativeLayout>
