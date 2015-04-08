@@ -2,6 +2,9 @@ package com.local.android.acelerometroprueba;
 
 import android.util.Log;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Created by FESEJU on 01/04/2015.
  */
@@ -27,7 +30,7 @@ public class Clasificador {
     private double valor_PDI;
     private double valor_ARI;
     private double valor_FFI;
-    private double valor_SCI;
+    private int valor_SCI;
 
     /**
      * Calcula los 8 valores necesarios para el clasificador
@@ -36,6 +39,8 @@ public class Clasificador {
      * @param valores array con todos los valores capturados de aceleración
      */
     Clasificador(long peaktime,Muestra[] valores){
+        Log.i("CLASIFICADOR","Entrando en clasificador");
+
         this.peaktime=peaktime;
         this.valores=valores;
 
@@ -49,11 +54,12 @@ public class Clasificador {
             }
         }
 
-
+        Log.i("CLASIFICADOR","Calculo valores iniciales");
         //cálculo valores iniciales.
         calcularIE();
         calcularIS();
 
+        Log.i("CLASIFICADOR","Calculo Caracteristicas");
         //a partir de aqui son los cálculos de los ocho valores.
         valor_AAMV=calcularAAMV();
         valor_IDI=calcularIDI();
@@ -63,6 +69,29 @@ public class Clasificador {
         valor_ARI=calcularARI();
         valor_FFI=calcularFFI();
         valor_SCI=calcularSCI();
+
+        Log.i("CLASIFICADOR","Caracteristicas");
+
+        HashMap<String, Double> caracteristicas = new HashMap<String, Double>();
+
+        caracteristicas.put("AAMV",valor_AAMV);
+        caracteristicas.put("IDI",valor_IDI);
+        caracteristicas.put("MPI",valor_MPI);
+        caracteristicas.put("MVI",valor_MVI);
+        caracteristicas.put("PDI",valor_PDI);
+        caracteristicas.put("ARI",valor_ARI);
+        caracteristicas.put("FFI",valor_FFI);
+        caracteristicas.put("SCI", (double) valor_SCI);
+
+        for (Map.Entry entry: caracteristicas.entrySet() ){
+            Log.i("CLASIFICADOR",entry.getKey()+" "+entry.getValue());
+        }
+
+
+
+        //pasar a red neuronal.
+
+
 
     }
 
@@ -337,7 +366,76 @@ public class Clasificador {
      *
      * @return el valor de SCI
      */
-    private double calcularSCI(){ return 0; }
+    private int calcularSCI(){
+        //calcular marca en tiempo anterior a 2200ms
+        int marcaInicio=0;
+        double tiempoInicio=peaktime-2200000000d;
+        for(int i=marcadorPeak-1;i<=0;i--){
+            if( valores[i].getTiempo() <tiempoInicio){
+                marcaInicio=i;
+                break;
+            }
+        }
+
+        String modo="inicio";
+        double tiempoInicioValle=0;
+        double tiempoFinValle=0;
+        double tiempoPasoAnterior=0;
+        int marcaFinValle=0;
+        int contadorPasos=0;
+
+        //calculo pasos
+        int marcaActual=0; //indica el indice actual que se esta comprobando.
+        while(marcaActual<marcadorPeak){
+            if( modo.equals("inicio")){
+
+                if(valores[marcaActual].getAceleracion()<1){
+                    tiempoInicioValle=valores[marcaActual].getTiempo();
+                    modo="valle";
+                }
+
+                marcaActual++;
+
+            } else if( modo.equals("valle")){
+                if(valores[marcaActual].getAceleracion()>=1){
+                    tiempoFinValle=valores[marcaActual-1].getTiempo();
+                    double dif=tiempoFinValle-tiempoInicioValle;
+                    if(dif>80000000){
+                        marcaFinValle=marcaActual-1;
+                        if(contadorPasos>0     ){
+                            if( (tiempoFinValle-tiempoPasoAnterior)>200000000 ){
+                                modo="pico";
+                            }else{
+                                modo="inicio";
+                            }
+                        }else{
+                            modo="pico";
+                        }
+
+                    }else{
+                        modo="inicio";
+                    }
+                }
+                marcaActual++;
+
+            }else if(modo.equals("pico")){
+                double difLimite= valores[marcaActual].getTiempo()- tiempoFinValle;
+                if(difLimite<200000000){
+                    if(valores[marcaActual].getAceleracion()>1.6) {
+                        contadorPasos++;
+                        modo="inicio";
+                    } else{
+                        //no hago nada
+                    }
+                }else{
+                    modo="inicio";
+                    marcaActual=marcaFinValle;
+                }
+                marcaActual++;
+            }
+        }
+        return contadorPasos;
+    }
 
 }
 

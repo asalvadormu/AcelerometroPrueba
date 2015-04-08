@@ -1,10 +1,12 @@
 package com.local.android.acelerometroprueba;
 
+import android.content.Context;
 import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Environment;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -14,6 +16,10 @@ import android.widget.TextView;
 
 import org.w3c.dom.Text;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.util.LinkedList;
 
 
@@ -27,6 +33,8 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
 
     private LinkedList<Muestra> lista;
     private int tamaLista=250;
+
+    private long umbralGravedad=2;
 
     private long pt=0; //peak time
     private long contadorTiempo=0;
@@ -51,7 +59,7 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
         tvModulo = (TextView) findViewById(R.id.modulo);
 
         mSensor = (SensorManager) getSystemService(SENSOR_SERVICE);
-        mSensor.registerListener(this, mSensor.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),  20000);
+     //   mSensor.registerListener(this, mSensor.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),  20000);
         // 20000 microsegundos. => 20 milisegundos
 
         mostrarInformacion();
@@ -59,6 +67,25 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
         lista=new LinkedList<Muestra>();
 
         Log.i("Acelerometro","Creado");
+
+        Red red=new Red();
+        red.iniciarRed(1,2,2,2);
+        red.iniciarSinapsis();
+
+        double[][] sinap={{1,2},{3,4}};
+        red.setSinapsisB(sinap);
+
+        double[] target={5,5};
+        double[] salid={4,5};
+        double[] par={1,1};
+        red.setTarget(target);
+        red.setVector_salida(salid);
+        red.setVector_parcial(par);
+
+        red.calcularErroresNeuronaSalida();
+        red.modificarPesosSinapsisB();
+
+
     }
 
     /**
@@ -166,7 +193,7 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
         cargarMuestra(new Muestra(tiempo,modulo));
 
         if(estado.equals("muestreo")){
-            if(modulo>2) iniciarPostpeak(tiempo);
+            if(modulo>umbralGravedad) iniciarPostpeak(tiempo);
         }
 
         if(estado.equals("postpeak")){
@@ -182,7 +209,7 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
         }
 
 
-        Log.i("refreshValues","ContadorTiempo: "+contadorTiempo);
+        //Log.i("refreshValues","ContadorTiempo: "+contadorTiempo);
 
 
 
@@ -199,6 +226,9 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
         //capturar datos de lista
         estado="activitytest";
         Log.i("Acelerometro","iniciar activity test");
+
+        //grabar a archivo externo para mostrar gráfico.
+        grabar();
 
         //calcular AAMV , media de las diferencias.
         long tiempoInicioCalculo=pt+1000000000; //se toma desde 1 sg a 2.5 sg despues del impacto
@@ -219,8 +249,14 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
         difTotal=difTotal/(datos.length-marcador);
         Log.i("Acelerometro","difTotal: "+difTotal);
 
-        //dependiendo del valor difTotal se envian los datos a clasificador o se considera "no caida".
-        Clasificador clasificador=new Clasificador(pt,datos);
+        //si valor supera 0.05g entonces se descarta como caida
+        //si es menor o igual se considera caida y se envian datos a clasificador
+        if(difTotal>0.05){
+
+        }else {
+
+            Clasificador clasificador = new Clasificador(pt, datos);
+        }
         estado="muestreo";
     }
 
@@ -269,6 +305,53 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
             Log.i("Muestra","datos nulos ");
         }
     }
+
+    private void grabar(){
+        try {
+            Log.i("GRABAR","Inicio grabar");
+
+
+            try{
+
+              //  File sdcard = Environment.getExternalStorageDirectory();
+
+
+
+                File path=Environment.getExternalStorageDirectory();
+                File file=new File(path,"datos.txt");
+                path.mkdir();
+
+                FileOutputStream out=new FileOutputStream(file);
+                OutputStreamWriter salida=new OutputStreamWriter(out);
+
+
+                String textoArchivo="";
+                for(int i=0;i<datos.length;i++) {
+                    textoArchivo = textoArchivo +
+                            String.valueOf( datos[i].getAceleracion())+","+
+                            String.valueOf( datos[i].getTiempo() )+'\n';
+                }
+                salida.write(textoArchivo);
+                salida.flush();
+                salida.close();
+
+
+            }catch (Exception e){
+
+                Log.w("ExternalStorage", "Error writing " +  e.getMessage());
+            }
+
+
+
+
+
+        }catch(Exception e) {
+            Log.i("GRABAR","fallo al grabar: "+e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+
 
 
 
